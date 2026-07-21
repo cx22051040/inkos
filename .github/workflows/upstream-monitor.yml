@@ -1,0 +1,111 @@
+name: Monitor upstream InkOS updates
+
+on:
+  schedule:
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: inkos-upstream-monitor
+  cancel-in-progress: true
+
+jobs:
+  check-upstream:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out product branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compare product branch with upstream
+        id: compare
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags https://github.com/Narcooo/inkos.git master:refs/remotes/upstream/master
+          product_commit="$(git rev-parse HEAD)"
+          upstream_commit="$(git rev-parse refs/remotes/upstream/master)"
+          if git merge-base --is-ancestor "$upstream_commit" HEAD; then
+            update_available=false
+          else
+            update_available=true
+          fi
+          echo "product_commit=$product_commit" >> "$GITHUB_OUTPUT"
+          echo "upstream_commit=$upstream_commit" >> "$GITHUB_OUTPUT"
+          echo "update_available=$update_available" >> "$GITHUB_OUTPUT"
+
+      - name: Create, update, or close the notification issue
+        uses: actions/github-script@v7
+        env:
+          UPDATE_AVAILABLE: ${{ steps.compare.outputs.update_available }}
+          PRODUCT_COMMIT: ${{ steps.compare.outputs.product_commit }}
+          UPSTREAM_COMMIT: ${{ steps.compare.outputs.upstream_commit }}
+        with:
+          script: |
+            const title = "[自动提醒] InkOS 上游有新版本";
+            const { owner, repo } = context.repo;
+            const issues = await github.paginate(github.rest.issues.listForRepo, {
+              owner,
+              repo,
+              state: "all",
+              per_page: 100,
+            });
+            const issue = issues.find((item) => !item.pull_request && item.title === title);
+            const updateAvailable = process.env.UPDATE_AVAILABLE === "true";
+            const productCommit = process.env.PRODUCT_COMMIT;
+            const upstreamCommit = process.env.UPSTREAM_COMMIT;
+
+            if (updateAvailable) {
+              const body = [
+                "检测到原作者仓库有尚未进入 `product/main` 的新提交。",
+                "",
+                `- 当前产品提交：[${productCommit.slice(0, 8)}](https://github.com/${owner}/${repo}/commit/${productCommit})`,
+                `- 上游最新提交：[${upstreamCommit.slice(0, 8)}](https://github.com/Narcooo/inkos/commit/${upstreamCommit})`,
+                "",
+                "请在门户项目中执行：",
+                "",
+                "```powershell",
+                "npm run stop:all",
+                "npm run sync:inkos",
+                "npm run setup",
+                "npm run start:all",
+                "```",
+                "",
+                "自动检查只负责提醒，不会自动合并或部署。",
+              ].join("\n");
+
+              if (issue) {
+                await github.rest.issues.update({
+                  owner,
+                  repo,
+                  issue_number: issue.number,
+                  state: "open",
+                  body,
+                  assignees: [owner],
+                });
+              } else {
+                await github.rest.issues.create({ owner, repo, title, body, assignees: [owner] });
+              }
+              return;
+            }
+
+            if (issue?.state === "open") {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: issue.number,
+                body: `已确认 product/main 包含上游提交 ${upstreamCommit.slice(0, 8)}，自动关闭提醒。`,
+              });
+              await github.rest.issues.update({
+                owner,
+                repo,
+                issue_number: issue.number,
+                state: "closed",
+                state_reason: "completed",
+              });
+            }
