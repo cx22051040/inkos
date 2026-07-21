@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 
 export type HashRoute =
   | { page: "dashboard" }
-  | { page: "chat" }
+  | { page: "chat"; launch?: PortalLaunchKind }
   | { page: "book"; bookId: string }
   | { page: "book-settings"; bookId: string }
   | { page: "book-create" }
@@ -26,10 +26,14 @@ export type HashRoute =
   | { page: "film-author"; projectId: string }
   | { page: "film-studio"; projectId: string };
 
+export type PortalLaunchKind = "script" | "storyboard" | "interactive-film";
+
 function parseHash(hash: string): HashRoute {
   const path = hash.replace(/^#\/?/, "");
 
   if (!path || path === "/") return { page: "dashboard" };
+  const chatLaunchMatch = path.match(/^chat\/(script|storyboard|interactive-film)$/);
+  if (chatLaunchMatch) return { page: "chat", launch: chatLaunchMatch[1] as PortalLaunchKind };
   if (path === "chat") return { page: "chat" };
   if (path === "config" || path === "services") return { page: "services" };
   if (path === "settings") return { page: "project-settings" };
@@ -69,7 +73,7 @@ function parseHash(hash: string): HashRoute {
 function routeToHash(route: HashRoute): string {
   switch (route.page) {
     case "dashboard": return "#/";
-    case "chat": return "#/chat";
+    case "chat": return route.launch ? `#/chat/${route.launch}` : "#/chat";
     case "book": return `#/book/${encodeURIComponent(route.bookId)}`;
     case "book-settings": return `#/book/${encodeURIComponent(route.bookId)}/settings`;
     case "book-create": return "#/book/new";

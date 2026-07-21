@@ -15,6 +15,11 @@ describe("hash route", () => {
       expect(parseHash("#/chat")).toEqual({ page: "chat" });
     });
 
+    it("parses portal creation mode routes", () => {
+      expect(parseHash("#/chat/script")).toEqual({ page: "chat", launch: "script" });
+      expect(parseHash("#/chat/interactive-film")).toEqual({ page: "chat", launch: "interactive-film" });
+    });
+
     it("parses book route", () => {
       expect(parseHash("#/book/my-novel")).toEqual({ page: "book", bookId: "my-novel" });
     });
@@ -71,6 +76,10 @@ describe("hash route", () => {
 
     it("chat -> #/chat", () => {
       expect(routeToHash({ page: "chat" })).toBe("#/chat");
+    });
+
+    it("portal creation mode -> #/chat/{mode}", () => {
+      expect(routeToHash({ page: "chat", launch: "storyboard" })).toBe("#/chat/storyboard");
     });
 
     it("book -> #/book/{id}", () => {

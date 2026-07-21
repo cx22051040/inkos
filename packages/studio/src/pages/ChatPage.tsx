@@ -899,6 +899,11 @@ export function ChatPage({ activeBookId, mode = activeBookId ? "book" : "book-cr
   };
 
   const emptyGuidance = (() => {
+    if (currentSessionKind === "book-create") {
+      return isZh
+        ? "说明书名、题材、世界观、主角和核心冲突，我会先建立可持续写作的故事基础与章节规划。"
+        : "Describe the title, genre, world, protagonist, and core conflict to build the story foundation and chapter plan.";
+    }
     if (currentSessionKind === "short") {
       return isZh
         ? "说一个短篇方向、标题灵感、人物压力或核心冲突，我会走 InkOS Short 生成正文、简介和封面。"
@@ -908,6 +913,21 @@ export function ChatPage({ activeBookId, mode = activeBookId ? "book" : "book-cr
       return isZh
         ? "说一个可玩的世界、角色处境或开场动作，我会启动互动世界；之后你可以自由行动或点建议动作。"
         : "Describe a playable world, character situation, or opening action to start an interactive world.";
+    }
+    if (currentSessionKind === "script") {
+      return isZh
+        ? "说明剧本类型、角色关系、核心冲突、时长和使用媒介，我会生成场次、动作、对白与可继续拆分的镜头线索。"
+        : "Describe the script format, character relationships, conflict, runtime, and medium to create scenes, action, dialogue, and shot cues.";
+    }
+    if (currentSessionKind === "storyboard") {
+      return isZh
+        ? "说明视频主题、场景、镜头数量、画面节奏和声音要求，我会生成逐镜头分镜表。"
+        : "Describe the video topic, scenes, shot count, visual rhythm, and audio requirements to create a shot-by-shot storyboard.";
+    }
+    if (currentSessionKind === "interactive-film") {
+      return isZh
+        ? "说明互动作品的世界、玩家身份、开场事件、关键选择和结局方向，我会建立可编辑的分支叙事项目。"
+        : "Describe the interactive world, player role, opening event, key choices, and ending directions to create an editable branching narrative.";
     }
     return isZh
       ? "\u544A\u8BC9\u6211\u4F60\u60F3\u5199\u4EC0\u4E48\u2014\u2014\u9898\u6750\u3001\u4E16\u754C\u89C2\u3001\u4E3B\u89D2\u3001\u6838\u5FC3\u51B2\u7A81"
