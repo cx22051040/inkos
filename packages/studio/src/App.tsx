@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, lazy, Suspense } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { useHashRoute } from "./hooks/use-hash-route";
 import type { HashRoute } from "./hooks/use-hash-route";
 import { Sidebar } from "./components/Sidebar";
@@ -25,8 +25,7 @@ const FlowView = lazy(() => import("./pages/FlowView"));
 const FilmWizard = lazy(() => import("./pages/FilmWizard"));
 import { LanguageSelector } from "./pages/LanguageSelector";
 import { BookSidebar, BookSidebarToggle } from "./components/chat/BookSidebar";
-import { setProjectChatSessionId } from "./pages/chat-page-state";
-import { useChatStore } from "./store/chat";
+import { usePortalLaunch } from "./features/portal";
 import { useSSE } from "./hooks/use-sse";
 import { useSessionEvents } from "./hooks/use-session-events";
 import { useTheme } from "./hooks/use-theme";
@@ -63,9 +62,6 @@ export function App() {
   const { data: project, error: projectError, refetch: refetchProject } = useApi<{ language: string; languageExplicit: boolean }>("/project");
   const [showLanguageSelector, setShowLanguageSelector] = useState(false);
   const [ready, setReady] = useState(false);
-  const createDraftSession = useChatStore((state) => state.createDraftSession);
-  const setChatInput = useChatStore((state) => state.setInput);
-  const handledPortalLaunch = useRef<string | null>(null);
 
   const isDark = theme === "dark";
 
@@ -93,21 +89,7 @@ export function App() {
   }, [project]);
 
   useSessionEvents(sse, route, setRoute);
-
-  useEffect(() => {
-    const launchKind = route.page === "chat" ? route.launch : undefined;
-    if (!launchKind) {
-      handledPortalLaunch.current = null;
-      return;
-    }
-    if (handledPortalLaunch.current === launchKind) return;
-
-    handledPortalLaunch.current = launchKind;
-    const sessionId = createDraftSession(null, launchKind);
-    setProjectChatSessionId(sessionId);
-    setChatInput("");
-    setRoute({ page: "chat" });
-  }, [createDraftSession, route, setChatInput, setRoute]);
+  usePortalLaunch(route, setRoute);
 
   const nav = {
     toDashboard: () => setRoute({ page: "dashboard" }),

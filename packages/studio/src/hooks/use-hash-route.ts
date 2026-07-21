@@ -1,4 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
+import {
+  parsePortalLaunchPath,
+  portalLaunchToHash,
+  type PortalLaunchKind,
+} from "../features/portal/launch-config";
+
+export type { PortalLaunchKind } from "../features/portal/launch-config";
 
 export type HashRoute =
   | { page: "dashboard" }
@@ -26,14 +33,12 @@ export type HashRoute =
   | { page: "film-author"; projectId: string }
   | { page: "film-studio"; projectId: string };
 
-export type PortalLaunchKind = "script" | "storyboard" | "interactive-film";
-
 function parseHash(hash: string): HashRoute {
   const path = hash.replace(/^#\/?/, "");
 
   if (!path || path === "/") return { page: "dashboard" };
-  const chatLaunchMatch = path.match(/^chat\/(script|storyboard|interactive-film)$/);
-  if (chatLaunchMatch) return { page: "chat", launch: chatLaunchMatch[1] as PortalLaunchKind };
+  const portalLaunch = parsePortalLaunchPath(path);
+  if (portalLaunch) return { page: "chat", launch: portalLaunch };
   if (path === "chat") return { page: "chat" };
   if (path === "config" || path === "services") return { page: "services" };
   if (path === "settings") return { page: "project-settings" };
@@ -73,7 +78,7 @@ function parseHash(hash: string): HashRoute {
 function routeToHash(route: HashRoute): string {
   switch (route.page) {
     case "dashboard": return "#/";
-    case "chat": return route.launch ? `#/chat/${route.launch}` : "#/chat";
+    case "chat": return route.launch ? portalLaunchToHash(route.launch) : "#/chat";
     case "book": return `#/book/${encodeURIComponent(route.bookId)}`;
     case "book-settings": return `#/book/${encodeURIComponent(route.bookId)}/settings`;
     case "book-create": return "#/book/new";
