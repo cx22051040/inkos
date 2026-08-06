@@ -7,6 +7,7 @@ import { createUseSkillTool } from "../agent/skill-tool.js";
 
 describe("use_skill agent tool", () => {
   let root: string;
+  const directoryLinkType = process.platform === "win32" ? "junction" : "dir";
 
   beforeEach(async () => {
     root = await mkdtemp(join(tmpdir(), "inkos-use-skill-"));
@@ -97,7 +98,7 @@ describe("use_skill agent tool", () => {
     await mkdir(baseDir, { recursive: true });
     await mkdir(outsideDir, { recursive: true });
     await writeFile(join(outsideDir, "secret.md"), "outside secret", "utf-8");
-    await symlink(outsideDir, join(baseDir, "references"));
+    await symlink(outsideDir, join(baseDir, "references"), directoryLinkType);
     const registry = createSkillRegistry({
       skills: [{
         id: "writer-distillation",
@@ -121,7 +122,7 @@ describe("use_skill agent tool", () => {
     const linkedDir = join(root, "linked-skill");
     await mkdir(join(realDir, "references"), { recursive: true });
     await writeFile(join(realDir, "references", "secret.md"), "outside secret", "utf-8");
-    await symlink(realDir, linkedDir);
+    await symlink(realDir, linkedDir, directoryLinkType);
     const registry = createSkillRegistry({
       skills: [{
         id: "linked-skill",
