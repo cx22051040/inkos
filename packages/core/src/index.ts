@@ -137,45 +137,38 @@ export {
   ChapterTraceSchema,
 } from "./models/input-governance.js";
 export {
-  BUILTIN_CAPABILITY_SKILLS,
-  BUILTIN_PROMPTS,
-  BUILTIN_PROMPT_PACKS,
-  CapabilitySkillManifestSchema,
-  PromptPackManifestSchema,
-  PromptPackPromptNotFoundError,
-  SkillContextNeedSchema,
-  SkillContextRetrievalSchema,
-  SkillContextTierSchema,
-  buildSkillContextPlan,
-  contextNeedById,
-  contextNeedPurpose,
+  AgentSkillSchema,
   createSkillRegistry,
-  getBuiltinPrompt,
-  listBuiltinPromptPacks,
-  listBuiltinPrompts,
-  loadExternalCapabilitySkills,
-  loadConfiguredCapabilitySkills,
-  loadPromptPackPrompt,
-  promptOverridePath,
-  type BuiltinPrompt,
-  type CapabilitySkillManifest,
+  loadConfiguredAgentSkills,
+  loadExternalAgentSkills,
+  parseAgentSkillDocument,
+  type AgentSkill,
   type CreateSkillRegistryOptions,
   type ExternalSkillDiagnostic,
-  type LoadedPromptPackPrompt,
-  type LoadExternalCapabilitySkillsInput,
-  type LoadExternalCapabilitySkillsResult,
-  type LoadPromptPackPromptInput,
-  type PromptPackManifest,
-  type PromptSource,
-  type SkillContextPlan,
-  type SkillContextPlanInput,
-  type SkillContextNeed,
-  type SkillContextRetrieval,
-  type SkillContextTier,
+  type LoadConfiguredAgentSkillsInput,
+  type LoadExternalAgentSkillsInput,
+  type LoadExternalAgentSkillsResult,
+  type ParseAgentSkillDocumentOptions,
   type SkillRegistry,
   type SkillResolutionInput,
   type SkillResolutionResult,
 } from "./skills/index.js";
+export {
+  BUILTIN_PROMPTS,
+  BUILTIN_PROMPT_PACKS,
+  PromptPackManifestSchema,
+  PromptPackPromptNotFoundError,
+  getBuiltinPrompt,
+  listBuiltinPromptPacks,
+  listBuiltinPrompts,
+  loadPromptPackPrompt,
+  promptOverridePath,
+  type BuiltinPrompt,
+  type LoadedPromptPackPrompt,
+  type LoadPromptPackPromptInput,
+  type PromptPackManifest,
+  type PromptSource,
+} from "./prompts/index.js";
 export { PlannerAgent, type PlanChapterInput, type PlanChapterOutput } from "./agents/planner.js";
 export {
   ComposerAgent,
@@ -226,6 +219,7 @@ export {
   ScriptTargetFormatSchema,
   ShortRunActionPayloadSchema,
   StoryboardCreateActionPayloadSchema,
+  WriteNextActionPayloadSchema,
   type ActionSource,
   type ActionPayload,
   type RequestedIntent,
@@ -460,6 +454,7 @@ export { loadSecrets, saveSecrets, getServiceApiKey, type SecretsFile } from "./
 export {
   COVER_PROVIDER_PRESETS,
   coverSecretKey,
+  normalizeCoverBaseUrl,
   resolveCoverProviderPreset,
   type CoverProviderId,
   type CoverProviderPreset,
@@ -541,7 +536,7 @@ export { arbitrateRuntimeStateDeltaHooks, type HookArbiterDecision } from "./uti
 export { analyzeHookHealth } from "./utils/hook-health.js";
 
 // Pipeline
-export { PipelineRunner, type PipelineConfig, type ChapterPipelineResult, type DraftResult, type PlanChapterResult, type ComposeChapterResult, type ReviseResult, type TruthFiles, type BookStatusInfo, type ImportChaptersInput, type ImportChaptersResult, type TokenUsageSummary } from "./pipeline/runner.js";
+export { PipelineRunner, type PipelineConfig, type ChapterPipelineResult, type WriteChaptersOptions, type DraftResult, type PlanChapterResult, type ComposeChapterResult, type ReviseResult, type TruthFiles, type BookStatusInfo, type ImportChaptersInput, type ImportChaptersResult, type TokenUsageSummary } from "./pipeline/runner.js";
 export { Scheduler, type SchedulerConfig } from "./pipeline/scheduler.js";
 export { detectChapter, detectAndRewrite, loadDetectionHistory, type DetectChapterResult, type DetectAndRewriteResult } from "./pipeline/detection-runner.js";
 export { runScriptCreation, runStoryboardCreation, runInteractiveFilmCreation, createStoryboardAssetsManifest, type ScriptCreationRunOptions, type ScriptCreationRunResult, type StoryboardAssetsManifest, type StoryboardCreationRunOptions, type StoryboardCreationRunResult, type InteractiveFilmCreationRunOptions, type InteractiveFilmCreationRunResult, type StoryboardImageAsset, type StoryboardImageAssetVariant } from "./pipeline/script-storyboard-runner.js";
@@ -551,6 +546,16 @@ export { ScriptCreationAgent, StoryboardCreationAgent, InteractiveFilmCreationAg
 export { BookWriteLockError, StateManager } from "./state/manager.js";
 export { syncChapterWordCounts, type ChapterWordCountChange, type ChapterWordSyncDeps, type ChapterWordSyncResult } from "./state/chapter-word-sync.js";
 export { deleteLatestChapter, type ChapterDeleteDeps, type DeleteLatestChapterOptions, type DeleteLatestChapterResult } from "./state/chapter-delete.js";
+export {
+  archiveChapterVersion,
+  listChapterVersions,
+  readChapterPlanDocument,
+  readChapterUserBrief,
+  readChapterVersion,
+  saveChapterUserBrief,
+  type ChapterVersion,
+  type ChapterVersionSource,
+} from "./state/chapter-workspace.js";
 export { bootstrapStructuredStateFromMarkdown } from "./state/state-bootstrap.js";
 export { renderCurrentStateProjection, renderHooksProjection, renderChapterSummariesProjection } from "./state/state-projections.js";
 export { applyRuntimeStateDelta, type RuntimeStateSnapshot } from "./state/state-reducer.js";

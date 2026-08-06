@@ -15,18 +15,14 @@ describe("Studio skill endpoints", () => {
     await rm(root, { recursive: true, force: true });
   });
 
-  it("lists built-in skills and project-local skills", async () => {
-    await mkdir(join(root, ".inkos", "skills", "detective-play"), { recursive: true });
+  it("lists project and external SKILL.md folders without implicit built-ins", async () => {
+    await mkdir(join(root, ".agents", "skills", "detective-play"), { recursive: true });
     await writeFile(
-      join(root, ".inkos", "skills", "detective-play", "SKILL.md"),
+      join(root, ".agents", "skills", "detective-play", "SKILL.md"),
       [
         "---",
-        "id: detective-play",
         "name: Detective Play",
         "description: Evidence-chain play skill.",
-        "whenToUse: Use for detective play.",
-        "triggers: [detective]",
-        "sessionKinds: [play]",
         "---",
         "Track evidence before twists.",
       ].join("\n"),
@@ -38,16 +34,17 @@ describe("Studio skill endpoints", () => {
     const json = await res.json() as { skills: Array<{ id: string; source: string; editable: boolean; body?: string }> };
 
     expect(res.status).toBe(200);
-    expect(json.skills.map((skill) => skill.id)).toContain("open-world-play");
+    expect(json.skills.map((skill) => skill.source)).not.toContain("builtin");
     expect(json.skills).toContainEqual(expect.objectContaining({
       id: "detective-play",
       source: "project",
       editable: true,
       body: "Track evidence before twists.",
     }));
+    expect(json.skills.find((skill) => skill.id === "detective-play")).not.toHaveProperty("whenToUse");
   });
 
-  it("creates, updates, and deletes project skills as SKILL.md files", async () => {
+  it("does not expose the legacy JSON skill create or update protocol", async () => {
     const app = createStudioServer({} as never, root);
 
     const createRes = await app.request("/api/v1/skills", {
@@ -58,16 +55,10 @@ describe("Studio skill endpoints", () => {
         name: "Romance Play",
         description: "Relationship-focused play skill.",
         whenToUse: "Use for romance interactions.",
-        triggers: ["romance"],
-        sessionKinds: ["play"],
         body: "Keep emotional continuity visible.",
       }),
     });
-    expect(createRes.status).toBe(200);
-    const created = await createRes.json() as { skill: { id: string; editable: boolean } };
-    expect(created.skill).toMatchObject({ id: "romance-play", editable: true });
-    expect(await readFile(join(root, ".inkos", "skills", "romance-play", "SKILL.md"), "utf-8"))
-      .toContain("Keep emotional continuity visible.");
+    expect(createRes.status).toBe(404);
 
     const updateRes = await app.request("/api/v1/skills/romance-play", {
       method: "PUT",
@@ -76,44 +67,105 @@ describe("Studio skill endpoints", () => {
         name: "Romance Play",
         description: "Relationship-focused play skill.",
         whenToUse: "Use for romance interactions.",
-        triggers: ["romance", "date"],
-        sessionKinds: ["play"],
         body: "Track longing, avoidance, and revealed care.",
       }),
     });
-    expect(updateRes.status).toBe(200);
-    expect(await readFile(join(root, ".inkos", "skills", "romance-play", "SKILL.md"), "utf-8"))
-      .toContain("Track longing, avoidance, and revealed care.");
-
-    const deleteRes = await app.request("/api/v1/skills/romance-play", { method: "DELETE" });
-    expect(deleteRes.status).toBe(200);
-    expect((await app.request("/api/v1/skills")).status).toBe(200);
-    const list = await (await app.request("/api/v1/skills")).json() as { skills: Array<{ id: string }> };
-    expect(list.skills.map((skill) => skill.id)).not.toContain("romance-play");
+    expect(updateRes.status).toBe(404);
   });
 
-  it("defaults optional project skill text fields when the Studio quick form leaves them blank", async () => {
+  it("imports a standard AgentSkills folder without manual InkOS fields", async () => {
     const app = createStudioServer({} as never, root);
+    const manifest = Buffer.from([
+      "---",
+      "name: writer-distillation",
+      "description: Distill a writer's craft when the user asks for style analysis.",
+      "---",
+      "Read references/rubric.md and extract transferable craft.",
+    ].join("\n")).toString("base64");
+    const rubric = Buffer.from("# Rubric\nPrefer scene evidence.", "utf-8").toString("base64");
 
-    const res = await app.request("/api/v1/skills", {
+    const response = await app.request("/api/v1/skills/import", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        id: "quick-skill",
-        name: "",
-        description: "",
-        whenToUse: "",
-        body: "Use the quick skill.",
+        files: [
+          { path: "writer-distillation/SKILL.md", dataUrl: `data:text/markdown;base64,${manifest}` },
+          { path: "writer-distillation/references/rubric.md", dataUrl: `data:text/markdown;base64,${rubric}` },
+        ],
       }),
     });
 
-    expect(res.status).toBe(200);
-    const json = await res.json() as { skill: { id: string; name: string; description: string; whenToUse: string } };
-    expect(json.skill).toMatchObject({
-      id: "quick-skill",
-      name: "quick-skill",
-      description: "Project runtime skill.",
-      whenToUse: "Use when explicitly selected by the user.",
+    expect(response.status).toBe(200);
+    const json = await response.json() as { skill: { id: string; editable: boolean } };
+    expect(json.skill).toMatchObject({ id: "writer-distillation", editable: true });
+    expect(await readFile(
+      join(root, ".agents", "skills", "writer-distillation", "references", "rubric.md"),
+      "utf-8",
+    )).toContain("Prefer scene evidence");
+  });
+
+  it("rejects traversal and does not overwrite an imported skill without confirmation", async () => {
+    const app = createStudioServer({} as never, root);
+    const manifest = Buffer.from([
+      "---",
+      "name: writer-distillation",
+      "description: Distill writer craft.",
+      "---",
+      "Distill craft.",
+    ].join("\n")).toString("base64");
+    const payload = {
+      files: [
+        { path: "writer-distillation/SKILL.md", dataUrl: `data:text/markdown;base64,${manifest}` },
+      ],
+    };
+
+    expect((await app.request("/api/v1/skills/import", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    })).status).toBe(200);
+    expect((await app.request("/api/v1/skills/import", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    })).status).toBe(409);
+
+    const traversal = await app.request("/api/v1/skills/import", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        files: [
+          ...payload.files,
+          { path: "writer-distillation/../outside.txt", dataUrl: "data:text/plain;base64,bm8=" },
+        ],
+      }),
     });
+    expect(traversal.status).toBe(400);
+  });
+
+  it("rejects import paths that collide on case-insensitive filesystems", async () => {
+    const app = createStudioServer({} as never, root);
+    const manifest = Buffer.from([
+      "---",
+      "name: portable-skill",
+      "description: Portable skill folder.",
+      "---",
+      "Use the static reference.",
+    ].join("\n")).toString("base64");
+
+    const response = await app.request("/api/v1/skills/import", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        files: [
+          { path: "portable-skill/SKILL.md", dataUrl: `data:text/markdown;base64,${manifest}` },
+          { path: "portable-skill/References/rubric.md", dataUrl: "data:text/plain;base64,b25l" },
+          { path: "portable-skill/references/RUBRIC.md", dataUrl: "data:text/plain;base64,dHdv" },
+        ],
+      }),
+    });
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toMatchObject({ error: { code: "INVALID_SKILL_IMPORT" } });
   });
 });
