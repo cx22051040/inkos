@@ -29,12 +29,12 @@ InkOS is an AI Agent system for story creation and multilingual translation: lon
 </p>
 
 <p align="center">
-  <a href="https://platform.moonshot.ai/"><img src="https://gcdn.moonshot.cn/growth-cdn/sponsor/kimi-en.png" width="900" alt="Kimi sponsors InkOS"></a>
+  <a href="https://www.kimi.com/code/?aff=inkos"><img src="https://gcdn.moonshot.cn/growth-cdn/sponsor/kimi-en.png" width="900" alt="Kimi sponsors InkOS"></a>
 </p>
 
-Thanks to Kimi for sponsoring this project! Kimi K2.7 is an open-source agentic model developed by Moonshot AI. With InkOS, Kimi can assist with planning, drafting, reviewing, and revising novels, scripts, interactive stories, and multilingual content, while InkOS manages characters, worldbuilding, plot threads, and persistent story state to keep long-form creation coherent and controllable.
+Thanks to [Kimi](https://www.kimi.com/code/?aff=inkos) for sponsoring this project! [Kimi K3](https://www.kimi.com/blog/kimi-k3) is Moonshot AI's most capable model and the world's first open 3T-class model, featuring native vision and a 1-million-token context window. With InkOS, K3 can assist with planning, drafting, reviewing, and revising novels, scripts, interactive stories, and multilingual content, while InkOS manages characters, worldbuilding, plot threads, and persistent story state to keep long-form creation coherent and controllable.
 
-InkOS Studio already supports Moonshot (Kimi). Get an API key from the Kimi Open Platform ([中文站](https://platform.moonshot.cn/) | [Global](https://platform.moonshot.ai/)) and start creating.
+**InkOS Studio already supports Moonshot (Kimi). Get an API key from the Kimi Open Platform ([中文站](https://platform.kimi.com/?aff=inkos) | [Global](https://platform.kimi.ai/?aff=inkos)) and start creating.**
 
 > 💡 **One key for global frontier models** — pair InkOS with [**kkaiapi**](https://en.kkaiapi.com/): an OpenAI-compatible gateway for Claude, GPT, Gemini, DeepSeek, Kimi, Qwen, GLM, and image models. Add it as a custom service with base URL `https://api.kkaiapi.com/v1`, then switch models in Studio without juggling multiple provider accounts.
 
@@ -42,6 +42,7 @@ InkOS Studio already supports Moonshot (Kimi). Get an API key from the Kimi Open
 
 InkOS 1.7 brings cross-language delivery, long-form forecasting, and continuous collaboration into the same Agent workbench. Translate complete works, compare several non-canonical futures, keep chatting while production runs in the background, or ask Chat to read references, import an existing manuscript, adjust prompts, revise chapters, and safely recover the creative state.
 
+- **Model setup** — Studio includes provider settings, model routing, cover-service settings, [kkaiapi](https://en.kkaiapi.com/) / OpenRouter aggregator entries, and custom OpenAI-compatible endpoints.
 - **Narrative forecasts**: Studio Chat and the CLI can create, re-check, and select 2-5 isolated futures from current canon, comparing chapter beats, character decisions, projected changes, risks, and author-intent alignment. Selecting one saves a plan only; it does not pre-emptively alter prose, foundations, or story state.
 - **Complete translation workbench**: import EPUB, text-based PDF, TXT, and Markdown; translate by chapter and semantic segment; maintain a glossary, generate side-by-side review reports, and export TXT, Markdown, or EPUB. Studio, Chat, and `inkos translate init / run / export` share the same capability.
 - **Native cross-language creation**: short fiction, scripts, storyboards, and interactive-film pipelines now include English-native prompt paths, with matching Studio copy and CLI language fallback rather than a translation-only menu.
@@ -54,10 +55,10 @@ InkOS 1.7 brings cross-language delivery, long-form forecasting, and continuous 
 
 ## v1.6.0 Major Update
 
-v1.6.0 expands InkOS from open-world play into interactive-film authoring, scripts, storyboards, runtime skills, and traceable research:
+v1.6.0 expands InkOS from open-world play into interactive-film authoring, scripts, storyboards, Agent Skills, and traceable research:
 
 - **Interactive film/games**: create branching story graphs, choices, variables/flags, relationship state, endings, node images, and exportable interactive project packages.
-- **Runtime skills**: built-in and project-local skills can inject professional rules, prompt packs, and context needs. Chat can auto-select skills, or the user can force one with `@skill-id`.
+- **Agent Skills**: standard `SKILL.md` packages provide professional guidance and static references. The Chat Agent can invoke a skill from the user's intent, or the user can force one with `@skill-id`.
 - **Traceable web research**: `research_web` creates sourced Markdown reports for worldbuilding, era/profession details, markets, and fact checks. Reports are references only and do not mutate canon or prose by themselves.
 - **Script and storyboard authoring**: Studio Chat can propose script, storyboard, and interactive-film creation actions, confirm them, then save artifacts that can be inspected in Studio.
 - **Reliability fixes**: targeted chapter edits can survive minor model paraphrases; failed multi-chapter audits no longer erase existing chapter indexes; model/provider switching keeps the active book binding.
@@ -87,9 +88,7 @@ This release continues the v1.5 direction: heavy actions are confirmable, comple
 
 **Studio Chat** — a persistent chat surface for answering questions, proposing actions, creating books, launching Short / Play, generating covers, and editing text artifacts without pretending an action succeeded before the tool result exists.
 
-**Runtime skills and research** — add reusable professional skills under `.inkos/skills/`, force them with `@skill-id`, or ask for web research to generate a sourced Markdown report.
-
-**Model setup** — Studio includes provider settings, model routing, cover-service settings, [kkaiapi](https://en.kkaiapi.com/) / OpenRouter aggregator entries, and custom OpenAI-compatible endpoints.
+**Agent Skills and research** — add standard `SKILL.md` packages under `.agents/skills/` or another AgentSkills directory, force them with `@skill-id`, or ask for web research to generate a sourced Markdown report.
 
 <p align="center">
   <img src="assets/play-item-warcraft.png" width="420" alt="InkOS Play item image example">
@@ -125,35 +124,25 @@ This routes through the same conversation executor used by the project TUI, so O
 
 Atomic commands (`plan chapter` / `compose chapter` / `draft` / `audit` / `revise` / `write next`) are still available, but they are now lower-level tools rather than the preferred OpenClaw entry. You can also browse it on [ClawHub](https://clawhub.ai) by searching `inkos`.
 
-### InkOS Runtime Skills
+### Agent Skills
 
-Runtime skills are professional capability packs used by InkOS Chat / Play / long-form writing. They are not the same thing as the ClawHub skill above. A runtime skill provides domain guidance, context needs, and prompt packs; it does not grant extra execution authority. Creating, writing, editing, and image generation still go through Studio tools and confirmation gates.
+InkOS uses the standard `SKILL.md` format directly and no longer maintains a separate InkOS-specific skill protocol. A skill gives the Chat Agent professional guidance and static references, but no extra execution authority. Creating, writing, editing, and image generation still go through InkOS tools and confirmation gates.
 
 How to use them:
 
-- Put `SKILL.md` files under `.inkos/skills/<skill-id>/` in a project. Studio Chat loads them at runtime.
+- Use standard AgentSkills / OpenClaw locations: project `skills/` and `.agents/skills/`, plus `~/.agents/skills/` and `~/.openclaw/skills/`. Studio can import a complete folder containing `SKILL.md` and its static references; project imports are saved under `.agents/skills/`.
 - Or set `INKOS_SKILL_DIRS=/abs/path/to/skills`; the path may point to one skill directory or a directory containing multiple skill subdirectories. Use the platform path delimiter for multiple paths.
 - Force one for a turn with `@skill-id`, for example: `@detective-play create an evidence-chain open world`.
-- Without `@skill-id`, InkOS can auto-select built-in skills from the session kind and trigger phrases, such as long-form writing, open-world play, or interactive film authoring.
-- Built-in prompt packs can be edited in **Project Settings → Prompt packs**. Project-level overrides are written to `prompt/<pack>/<prompt>.md`, for example `prompt/play/renderer.md` or `prompt/longform/writer.md`.
+- Without `@skill-id`, the Chat Agent decides from the user's current intent whether to call `use_skill`. Session kinds, trigger phrases, and substring matching no longer activate skills.
+- External skills provide instructions and static references only. InkOS never auto-executes their scripts, and a skill cannot bypass existing tool permissions or confirmation gates.
+- Prompt configuration is not a skill. Built-in prompt packs are edited separately in **Project Settings → Prompt packs**, with project overrides under `prompt/<pack>/<prompt>.md`.
 
 Minimal `SKILL.md`:
 
 ```md
 ---
-id: detective-play
 name: Detective Play
 description: Detective evidence and suspect-board play.
-whenToUse: Use for open-world detective play and evidence ledgers.
-triggers: [detective, evidence]
-sessionKinds: [play]
-contextNeeds:
-  - id: evidence-ledger
-    purpose: Preserve suspect, clue, and evidence chain state.
-    sources: [world/evidence.md]
-    tier: protected
-    appliesTo: [play_step]
-    retrieval: semantic
 ---
 Use evidence chains; do not turn clues into generic atmosphere.
 ```

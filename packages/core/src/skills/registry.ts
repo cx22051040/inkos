@@ -1,20 +1,16 @@
-import { BUILTIN_CAPABILITY_SKILLS } from "./builtin.js";
 import type {
-  CapabilitySkillManifest,
+  AgentSkill,
   SkillRegistry,
   SkillResolutionInput,
   SkillResolutionResult,
 } from "./types.js";
 
 export interface CreateSkillRegistryOptions {
-  readonly skills?: ReadonlyArray<CapabilitySkillManifest>;
+  readonly skills?: ReadonlyArray<AgentSkill>;
 }
 
 export function createSkillRegistry(options: CreateSkillRegistryOptions = {}): SkillRegistry {
-  const skills = dedupeSkills([
-    ...BUILTIN_CAPABILITY_SKILLS,
-    ...(options.skills ?? []),
-  ]);
+  const skills = dedupeSkills(options.skills ?? []);
   const byId = new Map(skills.map((skill) => [skill.id, skill]));
 
   return {
@@ -27,10 +23,9 @@ export function createSkillRegistry(options: CreateSkillRegistryOptions = {}): S
     resolveSkills(input: SkillResolutionInput) {
       const disabled = new Set(normalizeIdList(input.disabledSkills));
       const requested = normalizeIdList(input.requestedSkills);
-      const candidates = normalizeIdList(input.candidateSkills);
       const missingSkillIds: string[] = [];
       const disabledSkillIds = [...disabled].filter((id) => byId.has(id));
-      const used = new Map<string, CapabilitySkillManifest>();
+      const used = new Map<string, AgentSkill>();
       const forcedSkillIds: string[] = [];
 
       for (const id of requested) {
@@ -44,35 +39,22 @@ export function createSkillRegistry(options: CreateSkillRegistryOptions = {}): S
         forcedSkillIds.push(id);
       }
 
-      const autoSkillIds: string[] = [];
-      for (const id of candidates) {
-        const skill = byId.get(id);
-        if (!skill || disabled.has(id) || used.has(id)) continue;
-        used.set(id, skill);
-        autoSkillIds.push(id);
-      }
-
-      for (const skill of skills) {
-        if (disabled.has(skill.id) || used.has(skill.id)) continue;
-        if (!matchesSkill(skill, input)) continue;
-        used.set(skill.id, skill);
-        autoSkillIds.push(skill.id);
-      }
+      const availableSkills = skills.filter((skill) => !disabled.has(skill.id));
 
       return {
         usedSkills: [...used.values()],
         forcedSkillIds,
-        autoSkillIds,
         missingSkillIds: dedupeStrings(missingSkillIds),
         disabledSkillIds,
-        availableSkillIds: skills.map((skill) => skill.id),
+        availableSkills,
+        availableSkillIds: availableSkills.map((skill) => skill.id),
       } satisfies SkillResolutionResult;
     },
   };
 }
 
-function dedupeSkills(skills: ReadonlyArray<CapabilitySkillManifest>): CapabilitySkillManifest[] {
-  const byId = new Map<string, CapabilitySkillManifest>();
+function dedupeSkills(skills: ReadonlyArray<AgentSkill>): AgentSkill[] {
+  const byId = new Map<string, AgentSkill>();
   for (const skill of skills) {
     byId.set(normalizeSkillId(skill.id), {
       ...skill,
@@ -99,19 +81,4 @@ function dedupeStrings(values: ReadonlyArray<string>): string[] {
     out.push(value);
   }
   return out;
-}
-
-function matchesSkill(skill: CapabilitySkillManifest, input: SkillResolutionInput): boolean {
-  const sessionKind = input.sessionKind?.trim().toLowerCase();
-  if (sessionKind && skill.sessionKinds.some((kind) => kind.toLowerCase() === sessionKind)) {
-    return true;
-  }
-
-  const instruction = input.instruction?.trim().toLowerCase();
-  if (!instruction) return false;
-
-  return skill.triggers.some((trigger) => {
-    const normalized = trigger.trim().toLowerCase();
-    return normalized.length > 0 && instruction.includes(normalized);
-  });
 }

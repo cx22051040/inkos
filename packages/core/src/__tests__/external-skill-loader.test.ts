@@ -4,8 +4,9 @@ import { delimiter, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   createSkillRegistry,
-  loadConfiguredCapabilitySkills,
-  loadExternalCapabilitySkills,
+  loadConfiguredAgentSkills,
+  loadExternalAgentSkills,
+  parseAgentSkillDocument,
 } from "../skills/index.js";
 
 describe("external skill loader", () => {
@@ -19,22 +20,17 @@ describe("external skill loader", () => {
     await import("node:fs/promises").then(({ rm }) => rm(root, { recursive: true, force: true }));
   });
 
-  it("loads a data-only SKILL.md manifest with body text", async () => {
+  it("loads only the standard AgentSkills discovery fields and body", async () => {
     const skillDir = join(root, "detective-play");
     await mkdir(join(skillDir, "scripts"), { recursive: true });
     await writeFile(
       join(skillDir, "SKILL.md"),
       [
         "---",
-        "id: detective-play",
+        "id: legacy-detective-id",
         "name: Detective Play",
         "description: Detective evidence and suspect-board play.",
         "whenToUse: Use for open-world detective play and evidence ledgers.",
-        "triggers:",
-        "  - 侦探",
-        "  - evidence",
-        "sessionKinds:",
-        "  - play",
         "promptPacks:",
         "  - detective.play",
         "toolHints:",
@@ -56,17 +52,112 @@ describe("external skill loader", () => {
     );
     await writeFile(join(skillDir, "scripts", "install.sh"), "echo should-not-run\n", "utf-8");
 
-    const result = await loadExternalCapabilitySkills({ externalDirs: [skillDir] });
+    const result = await loadExternalAgentSkills({ externalDirs: [skillDir] });
 
     expect(result.diagnostics).toEqual([]);
     expect(result.skills).toHaveLength(1);
-    expect(result.skills[0]).toMatchObject({
+    expect(result.skills[0]).toEqual({
       id: "detective-play",
+      name: "Detective Play",
+      description: "Detective evidence and suspect-board play.",
       source: "external",
-      promptPacks: ["detective.play"],
-      body: expect.stringContaining("Use evidence chains"),
+      body: "Use evidence chains; do not turn clues into generic atmosphere.",
+      baseDir: skillDir,
     });
-    expect(result.skills[0].contextNeeds.map((need) => need.id)).toContain("evidence-ledger");
+    expect(result.skills[0]).not.toHaveProperty("whenToUse");
+    expect(result.skills[0]).not.toHaveProperty("promptPacks");
+    expect(result.skills[0]).not.toHaveProperty("toolHints");
+    expect(result.skills[0]).not.toHaveProperty("contextNeeds");
+  });
+
+  it("loads an AgentSkills/OpenClaw manifest without InkOS-only fields", async () => {
+    const skillDir = join(root, "writer-distillation");
+    await mkdir(skillDir, { recursive: true });
+    await writeFile(
+      join(skillDir, "SKILL.md"),
+      [
+        "---",
+        "name: writer-distillation",
+        "description: Distill a writer's repeatable craft and use it when the user asks for style analysis or imitation.",
+        "version: 1.2.0",
+        'metadata: { "openclaw": { "emoji": "✍️" } }',
+        "---",
+        "",
+        "# Writer Distillation",
+        "",
+        "Read the supplied samples, separate transferable craft from surface wording, and produce an editable writing guide.",
+      ].join("\r\n"),
+      "utf-8",
+    );
+
+    const result = await loadExternalAgentSkills({ externalDirs: [skillDir] });
+
+    expect(result.diagnostics).toEqual([]);
+    expect(result.skills).toEqual([
+      expect.objectContaining({
+        id: "writer-distillation",
+        name: "writer-distillation",
+        description: expect.stringContaining("Distill a writer"),
+        body: expect.stringContaining("transferable craft"),
+        baseDir: skillDir,
+        source: "external",
+      }),
+    ]);
+    expect(result.skills[0]).not.toHaveProperty("whenToUse");
+  });
+
+  it("derives a stable id from a standard skill name when no id is present", () => {
+    const skill = parseAgentSkillDocument(
+      [
+        "---",
+        "name: Writer Distillation",
+        "description: Use for writer-style distillation.",
+        "---",
+        "Distill craft.",
+      ].join("\n"),
+      { skillPath: join(root, "SKILL.md") },
+    );
+
+    expect(skill.id).toBe("writer-distillation");
+  });
+
+  it("prefixes ids derived from names that begin with a number", () => {
+    const skill = parseAgentSkillDocument(
+      [
+        "---",
+        "name: 3D Scene Writer",
+        "description: Use for spatial scene writing.",
+        "---",
+        "Keep spatial continuity visible.",
+      ].join("\n"),
+      { skillPath: join(root, "SKILL.md") },
+    );
+
+    expect(skill.id).toBe("skill-3d-scene-writer");
+  });
+
+  it("rejects discovery metadata larger than the Agent Skills limits", () => {
+    expect(() => parseAgentSkillDocument(
+      [
+        "---",
+        `name: ${"n".repeat(65)}`,
+        "description: Small description.",
+        "---",
+        "Body.",
+      ].join("\n"),
+      { skillPath: join(root, "SKILL.md") },
+    )).toThrow(/name.*64/i);
+
+    expect(() => parseAgentSkillDocument(
+      [
+        "---",
+        "name: oversized-description",
+        `description: ${"d".repeat(1025)}`,
+        "---",
+        "Body.",
+      ].join("\n"),
+      { skillPath: join(root, "SKILL.md") },
+    )).toThrow(/description.*1024/i);
   });
 
   it("registers loaded external skills with the normal registry", async () => {
@@ -76,26 +167,15 @@ describe("external skill loader", () => {
       join(skillDir, "SKILL.md"),
       [
         "---",
-        "id: romance-play",
         "name: Romance Play",
         "description: Romance interaction skill.",
-        "whenToUse: Use for romance play.",
-        "triggers: [恋爱]",
-        "sessionKinds: [play]",
-        "contextNeeds:",
-        "  - id: relationship-tone",
-        "    purpose: Preserve relationship tone.",
-        "    sources: [world/relationships.md]",
-        "    tier: protected",
-        "    appliesTo: [play_step]",
-        "    retrieval: semantic",
         "---",
         "Romance body.",
       ].join("\n"),
       "utf-8",
     );
 
-    const loaded = await loadExternalCapabilitySkills({ externalDirs: [root] });
+    const loaded = await loadExternalAgentSkills({ externalDirs: [root] });
     const registry = createSkillRegistry({ skills: loaded.skills });
     const resolved = registry.resolveSkills({ requestedSkills: ["romance-play"] });
 
@@ -106,37 +186,85 @@ describe("external skill loader", () => {
   it("rejects relative external directories", async () => {
     // 不能用 relative(process.cwd(), root)：Windows CI 上 cwd 和临时目录在不同盘符，
     // path.relative 跨盘符会返回绝对路径，测试意图（传相对路径必须被拒绝）就失效了。
-    await expect(loadExternalCapabilitySkills({ externalDirs: [join("relative", "external-skills")] }))
+    await expect(loadExternalAgentSkills({ externalDirs: [join("relative", "external-skills")] }))
       .rejects.toThrow(/absolute/);
   });
 
-  it("loads project-local skills from .inkos/skills without explicit configuration", async () => {
-    const skillDir = join(root, ".inkos", "skills", "detective-play");
+  it("loads project-local skills from .agents/skills without explicit configuration", async () => {
+    const skillDir = join(root, ".agents", "skills", "detective-play");
     await mkdir(skillDir, { recursive: true });
     await writeFile(
       join(skillDir, "SKILL.md"),
       [
         "---",
-        "id: detective-play",
         "name: Detective Play",
         "description: Detective evidence play.",
-        "whenToUse: Use for detective play.",
-        "triggers: [侦探]",
-        "sessionKinds: [play]",
         "---",
         "Preserve evidence chains.",
       ].join("\n"),
       "utf-8",
     );
 
-    const loaded = await loadConfiguredCapabilitySkills({
+    const loaded = await loadConfiguredAgentSkills({
       projectRoot: root,
       env: {},
-      userRoot: join(root, "missing-user-root"),
+      homeDir: join(root, "home"),
     });
 
     expect(loaded.diagnostics).toEqual([]);
-    expect(loaded.skills.map((skill) => skill.id)).toContain("detective-play");
+    expect(loaded.skills).toContainEqual(expect.objectContaining({
+      id: "detective-play",
+      source: "project",
+    }));
+  });
+
+  it("does not discover the removed InkOS-specific skill directory", async () => {
+    const skillDir = join(root, ".inkos", "skills", "legacy-skill");
+    await mkdir(skillDir, { recursive: true });
+    await writeFile(
+      join(skillDir, "SKILL.md"),
+      [
+        "---",
+        "name: legacy-skill",
+        "description: A manifest stored under the removed legacy directory.",
+        "---",
+        "This directory is no longer an Agent Skills source.",
+      ].join("\n"),
+      "utf-8",
+    );
+
+    const loaded = await loadConfiguredAgentSkills({
+      projectRoot: root,
+      env: {},
+      homeDir: join(root, "home"),
+    });
+
+    expect(loaded.skills.map((skill) => skill.id)).not.toContain("legacy-skill");
+  });
+
+  it("discovers AgentSkills/OpenClaw project roots and one grouping level", async () => {
+    const groupedSkillDir = join(root, "project", "skills", "writing", "writer-distillation");
+    await mkdir(groupedSkillDir, { recursive: true });
+    await writeFile(
+      join(groupedSkillDir, "SKILL.md"),
+      [
+        "---",
+        "name: writer-distillation",
+        "description: Distill writer craft.",
+        "---",
+        "Preserve transferable craft, not source wording.",
+      ].join("\n"),
+      "utf-8",
+    );
+
+    const loaded = await loadConfiguredAgentSkills({
+      projectRoot: join(root, "project"),
+      env: {},
+      homeDir: join(root, "home"),
+    });
+
+    expect(loaded.diagnostics).toEqual([]);
+    expect(loaded.skills.map((skill) => skill.id)).toContain("writer-distillation");
   });
 
   it("loads external skills from INKOS_SKILL_DIRS and reports bad paths without throwing", async () => {
@@ -147,21 +275,17 @@ describe("external skill loader", () => {
       join(skillDir, "SKILL.md"),
       [
         "---",
-        "id: romance-play",
         "name: Romance Play",
         "description: Romance interaction skill.",
-        "whenToUse: Use for romance play.",
-        "triggers: [恋爱]",
-        "sessionKinds: [play]",
         "---",
         "Keep emotional continuity.",
       ].join("\n"),
       "utf-8",
     );
 
-    const loaded = await loadConfiguredCapabilitySkills({
+    const loaded = await loadConfiguredAgentSkills({
       projectRoot: join(root, "project"),
-      userRoot: join(root, "user"),
+      homeDir: join(root, "home"),
       env: {
         INKOS_SKILL_DIRS: [externalRoot, join(root, "does-not-exist")].join(delimiter),
       },
@@ -171,5 +295,33 @@ describe("external skill loader", () => {
     expect(loaded.skills.map((skill) => skill.id)).toContain("romance-play");
     expect(loaded.diagnostics.some((diagnostic) => diagnostic.path.includes("does-not-exist"))).toBe(true);
     expect(registry.resolveSkills({ requestedSkills: ["romance-play"] }).forcedSkillIds).toEqual(["romance-play"]);
+  });
+
+  it("marks skills discovered from the user Agent Skills directory as user skills", async () => {
+    const homeDir = join(root, "home");
+    const skillDir = join(homeDir, ".agents", "skills", "personal-editor");
+    await mkdir(skillDir, { recursive: true });
+    await writeFile(
+      join(skillDir, "SKILL.md"),
+      [
+        "---",
+        "name: personal-editor",
+        "description: Personal editing guidance.",
+        "---",
+        "Preserve the user's house style.",
+      ].join("\n"),
+      "utf-8",
+    );
+
+    const loaded = await loadConfiguredAgentSkills({
+      projectRoot: join(root, "project"),
+      homeDir,
+      env: {},
+    });
+
+    expect(loaded.skills).toContainEqual(expect.objectContaining({
+      id: "personal-editor",
+      source: "user",
+    }));
   });
 });

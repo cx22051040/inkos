@@ -36,12 +36,12 @@ InkOS 是一个面向故事创作与多语言翻译的 AI Agent 系统：长篇�
 </p>
 
 <p align="center">
-  <a href="https://platform.moonshot.cn/"><img src="https://gcdn.moonshot.cn/growth-cdn/sponsor/kimi-zh.png" width="900" alt="Kimi 赞助 InkOS"></a>
+  <a href="https://www.kimi.com/code/?aff=inkos"><img src="https://gcdn.moonshot.cn/growth-cdn/sponsor/kimi-zh.png" width="900" alt="Kimi 赞助 InkOS"></a>
 </p>
 
-感谢 Kimi 赞助本项目！Kimi K2.7 是 Moonshot AI 推出的开源智能体模型。搭配 InkOS，Kimi 可以参与长短篇小说、剧本、互动影游与多语言内容的规划、写作、审稿和修订；InkOS 则持续管理角色、设定、伏笔与故事状态，让长篇创作更连贯、更可控。
+感谢 [Kimi](https://www.kimi.com/code/?aff=inkos) 赞助本项目！[Kimi K3](https://www.kimi.com/blog/kimi-k3) 是 Moonshot AI 迄今能力最强的模型，也是全球首个开源 3T 级模型，拥有原生视觉能力与 100 万 Token 上下文。搭配 InkOS，K3 可以参与长短篇小说、剧本、互动影游与多语言内容的规划、写作、审稿和修订；InkOS 则持续管理角色、设定、伏笔与故事状态，让长篇创作更连贯、更可控。
 
-InkOS Studio 已支持 Moonshot（Kimi）。前往 Kimi 开放平台（[中文站](https://platform.moonshot.cn/)｜[Global](https://platform.moonshot.ai/)）获取 API Key，即可开始创作。
+**InkOS Studio 已支持 Moonshot（Kimi）。前往 Kimi 开放平台（[中文站](https://platform.kimi.com/?aff=inkos)｜[Global](https://platform.kimi.ai/?aff=inkos)）获取 API Key，即可开始创作。**
 
 > 💡 **写小说，先给 Agent 接一层专业数据** —— 写小说不只缺模型，更缺素材。推荐搭配 [**火花数据API（huohuaapi）**](https://huohuaapi.com/)：按调用计费的小说 / 网文创作数据，让 Agent 动笔前先查小说正文、章节结构、人物设定、文风和创作方法等带来源素材，而不是只靠 Prompt 硬凑一份“剧情提纲”。
 
@@ -49,6 +49,7 @@ InkOS Studio 已支持 Moonshot（Kimi）。前往 Kimi 开放平台（[中文�
 
 InkOS 1.7 把跨语言交付、长篇推演和持续协作汇入同一套 Agent 工作台。你可以翻译整本作品、比较多条非正史未来、在后台写作时继续聊天，也可以让 Chat 读取资料、导入旧稿、调整提示词、修订章节并安全恢复创作现场。
 
+- **模型配置** — Studio 内置多服务配置、模型路由和封面服务配置；也支持 [kkaiapi](https://kkaiapi.com/) / OpenRouter 等全球主流模型聚合入口，以及自定义 OpenAI-compatible 服务。
 - **剧情多线推演**：Studio Chat 与 CLI 可基于当前正史创建、核验和选择 2-5 条隔离的候选未来，横向比较章节节拍、人物决定、预计变化、风险和作者意图匹配度；采用分支只保存计划，不会提前修改正文、设定或故事状态。
 - **完整翻译工作台**：支持 EPUB、文本型 PDF、TXT、Markdown，按章节和语义段翻译，维护术语表、生成对照审校报告，并导出 TXT、Markdown 或 EPUB；Studio、Chat 与 `inkos translate init / run / export` 共用同一能力。
 - **跨语言原生创作**：短篇、剧本、分镜和互动影游补齐英文创作链路，Studio 动态界面与 CLI 语言回退同步完善，不只是增加一个翻译菜单。
@@ -61,10 +62,10 @@ InkOS 1.7 把跨语言交付、长篇推演和持续协作汇入同一套 Agent 
 
 ## v1.6.0 - 互动影游与 Skill 系统
 
-InkOS 1.6.0 把开放世界继续推进到互动影游、剧本和分镜工作台，同时引入可插拔 Skill 系统：专业能力可以被 Chat 自动调用，也可以由用户强制指定。写作、互动、研究和导出继续共享同一套 action surface，重动作确认后再执行，产物可以在 Studio 内查看和导出。
+InkOS 1.6.0 把开放世界继续推进到互动影游、剧本和分镜工作台，同时引入可插拔 Skill 系统：专业能力可以由 Chat Agent 按用户意图调用，也可以由用户强制指定。写作、互动、研究和导出继续共享同一套 action surface，重动作确认后再执行，产物可以在 Studio 内查看和导出。
 
 - **互动影游**：新增分支剧情、变量 / 旗标、角色关系、结局、节点图片和交互项目导出，适合做互动剧、互动影游和多结局脚本。
-- **Skill 系统**：支持内置 / 外部 skill，为长篇、短篇、Play、剧本、分镜等入口注入专业规则、提示词包和上下文需求。
+- **Agent Skills**：直接兼容标准 `SKILL.md` 专业能力包；Chat Agent 可按用户意图调用，用户也可用 `@skill-id` 强制指定。Skill 只提供专业指导和静态参考资料，不再绑定 InkOS 私有字段、提示词包或上下文规划器。
 - **联网研究**：新增 `research_web`，用于世界观、职业、年代、市场和事实核查，生成带来源、查询记录和可信度的 Markdown 参考报告。
 - **协作编辑稳定性**：局部章节编辑、章节索引恢复、多渠道模型切换后的 bookId 传递都补了回归保护。
 
@@ -96,10 +97,6 @@ InkOS Play 发布和 Studio 体验升级：你可以用一句自然语言创建�
 **InkOS Play** — 新增开放世界与分支互动。你可以用自然语言指定世界契约、时间推进方式、角色 agent、物品 / 证据 / 关系规则和视觉风格；系统维护世界状态、可点击选择、自由动作、HUD 和自动配图。
 
 **Studio Chat** — 普通聊天、建书、短篇、封面、互动世界都走同一套 action surface。重动作先确认，生成物可预览，可通过聊天修改章节、封面提示词、世界状态和持久化文本产物。
-
-**模型配置** — Studio 内置多服务配置、模型路由和封面服务配置；也支持 [kkaiapi](https://kkaiapi.com/) / OpenRouter 等全球主流模型聚合入口，以及自定义 OpenAI-compatible 服务。
-
-
 
 **Native English novel writing now supported！** Set `--lang en` to write in English. See [English README](README.en.md) for details.
 
@@ -140,35 +137,26 @@ inkos interact --json --message "继续当前书，但把节奏再收紧一点"
 
 `plan chapter` / `compose chapter` / `draft` / `audit` / `revise` / `write next` 这些原子命令仍然保留，但更适合作为底层工具，而不是 OpenClaw 的首选入口。也可以在 [ClawHub](https://clawhub.ai) 搜索 `inkos` 在线查看。
 
-### InkOS 运行时 Skill
+### Agent Skills
 
-这里的 skill 指 InkOS Chat/Play/长篇写作内部可使用的专业能力包，和上面的 ClawHub Skill 不是同一个概念。它不会给模型额外执行权限，只提供专业规则、上下文需求和 prompt pack；创建、写入、编辑、生成图片仍然走 Studio 的工具权限和确认闸门。
+InkOS 直接使用标准 `SKILL.md` 作为专业能力扩展，不再维护一套 InkOS 私有 Skill 协议。Skill 只向 Chat Agent 提供专业说明和静态参考资料，不会增加执行权限；创建、写入、编辑和生成图片仍然由 InkOS 工具与确认闸门控制。
 
 可用方式：
 
-- 在项目目录放置 `.inkos/skills/<skill-id>/SKILL.md`，Studio Chat 会在运行时自动加载。
+- 放到标准目录：项目 `skills/`、`.agents/skills/`，或用户目录 `~/.agents/skills/`、`~/.openclaw/skills/`。Studio 也可以导入包含 `SKILL.md` 的完整文件夹和静态参考资料；项目导入统一保存到 `.agents/skills/`。
 - 或设置 `INKOS_SKILL_DIRS=/abs/path/to/skills`，可指向单个 skill 目录，也可指向包含多个 skill 子目录的目录。多个目录按系统分隔符分隔。
 - 在 Chat 里用 `@skill-id` 强制本轮使用，例如：`@detective-play 做一个证据链驱动的开放世界`。
-- 不写 `@skill-id` 时，系统会根据 session 类型和触发词自动选择内置 skill，例如长篇、开放世界、互动影游。
-- 在 Studio 的 **项目设置 → 提示词** 可以编辑内置 prompt pack；项目级覆盖文件会写到 `prompt/<pack>/<prompt>.md`，例如 `prompt/play/renderer.md`、`prompt/longform/writer.md`。
+- 不写 `@skill-id` 时，Chat Agent 根据用户当前意图决定是否调用 `use_skill`；不再通过 session 类型、关键词或字符串包含匹配机械启用。
+- 外部 Skill 只提供指令和静态参考资料，InkOS 不会自动执行其中的脚本；它也不会绕过现有工具权限与确认闸门。
+
+提示词配置不是 Skill。Studio 的 **项目设置 → 提示词** 单独管理 prompt packs，项目级覆盖文件写入 `prompt/<pack>/<prompt>.md`，例如 `prompt/play/renderer.md`、`prompt/longform/writer.md`。
 
 最小 `SKILL.md` 示例：
 
 ```md
 ---
-id: detective-play
 name: Detective Play
 description: Detective evidence and suspect-board play.
-whenToUse: Use for open-world detective play and evidence ledgers.
-triggers: [侦探, evidence]
-sessionKinds: [play]
-contextNeeds:
-  - id: evidence-ledger
-    purpose: Preserve suspect, clue, and evidence chain state.
-    sources: [world/evidence.md]
-    tier: protected
-    appliesTo: [play_step]
-    retrieval: semantic
 ---
 Use evidence chains; do not turn clues into generic atmosphere.
 ```

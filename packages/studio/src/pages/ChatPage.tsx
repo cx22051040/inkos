@@ -35,13 +35,14 @@ import {
   ArrowUp,
   ChevronDown,
   Check,
-  Plus,
+  FolderUp,
   X,
   Paperclip,
   Gamepad2,
   Palette,
   RotateCcw,
   Square,
+  Plus,
 } from "lucide-react";
 import { Shimmer } from "../components/ai-elements/shimmer";
 import {
@@ -62,11 +63,9 @@ import {
   shouldShowPlayChoicePanel,
 } from "./chat-page-state";
 import {
-  createEmptySkillDraft,
+  serializeSkillFolder,
   selectedSkillIdsForSend,
-  skillDraftToPayload,
   toggleSelectedSkillIds,
-  type SkillDraft,
   type StudioSkill,
 } from "./skill-ui-state";
 
@@ -262,55 +261,77 @@ const AssistantMessageParts = memo(function AssistantMessageParts({
 function SkillPickerPanel({
   isZh,
   skills,
+  diagnostics,
   selectedSkillIds,
   loading,
   error,
-  draft,
   saving,
   createError,
-  showCreate,
   onToggleSkill,
-  onDraftChange,
-  onCreate,
-  onShowCreate,
+  onImport,
 }: {
   readonly isZh: boolean;
   readonly skills: ReadonlyArray<StudioSkill>;
+  readonly diagnostics?: ReadonlyArray<{ readonly path?: string; readonly message?: string }>;
   readonly selectedSkillIds: ReadonlyArray<string>;
   readonly loading: boolean;
   readonly error: string | null;
-  readonly draft: SkillDraft;
   readonly saving: boolean;
   readonly createError: string | null;
-  readonly showCreate: boolean;
   readonly onToggleSkill: (skillId: string) => void;
-  readonly onDraftChange: (draft: SkillDraft) => void;
-  readonly onCreate: () => void;
-  readonly onShowCreate: (show: boolean) => void;
+  readonly onImport: (files: FileList) => void;
 }) {
   const selected = new Set(selectedSkillIds);
-  const canCreate = Boolean(skillDraftToPayload(draft).id && draft.body.trim());
+  const folderInputRef = useRef<HTMLInputElement>(null);
 
   return (
     <div className="absolute bottom-[calc(100%+10px)] left-0 z-40 w-full overflow-hidden rounded-2xl border border-border/60 bg-card/95 shadow-2xl backdrop-blur">
       <div className="border-b border-border/40 px-4 py-3">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <div className="text-sm font-bold">{isZh ? "选择 Skill" : "Select skills"}</div>
+            <div className="text-sm font-bold">{isZh ? "选择 Agent Skill" : "Select Agent Skills"}</div>
             <p className="mt-0.5 text-xs leading-5 text-muted-foreground">
-              {isZh ? "Skill 会随这条消息一起注入，让 Chat 主动使用专业能力。" : "Skills are injected into this turn so Chat can use focused expertise."}
+              {isZh
+                ? "Agent 会按当前意图自主调用；点选 Skill 可强制它随下一条消息启用。"
+                : "The agent can choose a skill from your intent; selecting one forces it for the next message."}
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => onShowCreate(!showCreate)}
-            className="shrink-0 rounded-lg border border-border/50 px-3 py-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
-          >
-            {showCreate ? (isZh ? "收起" : "Close") : (isZh ? "+ 新建" : "+ New")}
-          </button>
+          <div className="flex shrink-0 items-center">
+            <button
+              type="button"
+              onClick={() => folderInputRef.current?.click()}
+              disabled={saving}
+              className="flex items-center gap-1.5 rounded-lg border border-border/50 px-3 py-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary disabled:opacity-40"
+            >
+              <FolderUp size={13} />
+              {isZh ? "导入" : "Import"}
+            </button>
+            <input
+              ref={folderInputRef}
+              type="file"
+              multiple
+              className="hidden"
+              {...({ webkitdirectory: "", directory: "" } as Record<string, string>)}
+              onChange={(event) => {
+                if (event.currentTarget.files?.length) onImport(event.currentTarget.files);
+                event.currentTarget.value = "";
+              }}
+            />
+          </div>
         </div>
       </div>
       <div className="max-h-[380px] overflow-y-auto p-3">
+        {createError ? <div className="mb-3 rounded-xl bg-destructive/10 px-3 py-2 text-xs text-destructive">{createError}</div> : null}
+        {diagnostics?.length ? (
+          <div className="mb-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
+            <div className="font-semibold">{isZh ? "部分外部 Skill 未加载" : "Some external skills were not loaded"}</div>
+            {diagnostics.slice(0, 4).map((item, index) => (
+              <div key={`${item.path ?? "skill"}-${index}`} className="mt-1 break-all">
+                {item.path ? `${item.path}: ` : ""}{item.message ?? (isZh ? "格式无效" : "Invalid format")}
+              </div>
+            ))}
+          </div>
+        ) : null}
         {loading ? (
           <div className="px-2 py-6 text-center text-sm text-muted-foreground">{isZh ? "加载 Skill..." : "Loading skills..."}</div>
         ) : error ? (
@@ -340,7 +361,7 @@ function SkillPickerPanel({
                         </span>
                       </div>
                       <div className="mt-0.5 font-mono text-[11px] text-muted-foreground/70">@{skill.id}</div>
-                      <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">{skill.whenToUse || skill.description}</p>
+                      <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">{skill.description}</p>
                     </div>
                   </div>
                 </button>
@@ -349,63 +370,6 @@ function SkillPickerPanel({
           </div>
         )}
 
-        {showCreate ? (
-          <div className="mt-3 rounded-xl border border-border/50 bg-background/50 p-3">
-            <div className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
-              {isZh ? "项目 Skill" : "Project skill"}
-            </div>
-            <div className="grid gap-2 md:grid-cols-2">
-              <input
-                value={draft.id}
-                onChange={(event) => onDraftChange({ ...draft, id: event.target.value })}
-                placeholder="skill-id"
-                className="rounded-lg border border-border bg-secondary/30 px-3 py-2 text-sm outline-none focus:border-primary/50"
-              />
-              <input
-                value={draft.name}
-                onChange={(event) => onDraftChange({ ...draft, name: event.target.value })}
-                placeholder={isZh ? "Skill 名称" : "Skill name"}
-                className="rounded-lg border border-border bg-secondary/30 px-3 py-2 text-sm outline-none focus:border-primary/50"
-              />
-              <input
-                value={draft.whenToUse}
-                onChange={(event) => onDraftChange({ ...draft, whenToUse: event.target.value })}
-                placeholder={isZh ? "什么时候使用" : "When to use"}
-                className="rounded-lg border border-border bg-secondary/30 px-3 py-2 text-sm outline-none focus:border-primary/50 md:col-span-2"
-              />
-              <input
-                value={draft.triggers}
-                onChange={(event) => onDraftChange({ ...draft, triggers: event.target.value })}
-                placeholder={isZh ? "触发词，用逗号分隔" : "Triggers, comma separated"}
-                className="rounded-lg border border-border bg-secondary/30 px-3 py-2 text-sm outline-none focus:border-primary/50"
-              />
-              <input
-                value={draft.sessionKinds}
-                onChange={(event) => onDraftChange({ ...draft, sessionKinds: event.target.value })}
-                placeholder="chat,book,short,play"
-                className="rounded-lg border border-border bg-secondary/30 px-3 py-2 text-sm outline-none focus:border-primary/50"
-              />
-              <textarea
-                value={draft.body}
-                onChange={(event) => onDraftChange({ ...draft, body: event.target.value })}
-                placeholder={isZh ? "写给模型的专业能力说明..." : "Instructions for the model..."}
-                rows={4}
-                className="rounded-lg border border-border bg-secondary/30 px-3 py-2 text-sm leading-6 outline-none focus:border-primary/50 md:col-span-2"
-              />
-            </div>
-            {createError ? <p className="mt-2 text-xs text-destructive">{createError}</p> : null}
-            <div className="mt-3 flex justify-end">
-              <button
-                type="button"
-                onClick={onCreate}
-                disabled={!canCreate || saving}
-                className="rounded-lg bg-primary px-4 py-2 text-xs font-bold text-primary-foreground transition-opacity disabled:opacity-40"
-              >
-                {saving ? (isZh ? "保存中..." : "Saving...") : (isZh ? "保存并启用" : "Save and enable")}
-              </button>
-            </div>
-          </div>
-        ) : null}
       </div>
     </div>
   );
@@ -476,10 +440,8 @@ export function ChatPage({ activeBookId, mode = activeBookId ? "book" : "book-cr
   const [playImageCoverReady, setPlayImageCoverReady] = useState(false);
   const [skillPanelOpen, setSkillPanelOpen] = useState(false);
   const [selectedSkillIds, setSelectedSkillIds] = useState<string[]>([]);
-  const [skillDraft, setSkillDraft] = useState<SkillDraft>(() => createEmptySkillDraft());
   const [skillSaving, setSkillSaving] = useState(false);
   const [skillCreateError, setSkillCreateError] = useState<string | null>(null);
-  const [showSkillCreate, setShowSkillCreate] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const [attachmentError, setAttachmentError] = useState<string | null>(null);
   const { data: skillsData, loading: skillsLoading, error: skillsError, refetch: refetchSkills } = useApi<SkillsResponse>("/skills");
@@ -747,17 +709,14 @@ export function ChatPage({ activeBookId, mode = activeBookId ? "book" : "book-cr
     }
   };
 
-  const createProjectSkill = async () => {
-    const payload = skillDraftToPayload(skillDraft);
-    if (!payload.id || !skillDraft.body.trim()) return;
+  const importProjectSkill = async (files: FileList) => {
     setSkillSaving(true);
     setSkillCreateError(null);
     try {
-      await postApi("/skills", payload);
+      const serialized = await serializeSkillFolder(files);
+      const response = await postApi<{ skill: StudioSkill }>("/skills/import", { files: serialized });
       await refetchSkills();
-      setSelectedSkillIds((prev) => prev.includes(payload.id!) ? prev : [...prev, payload.id!]);
-      setSkillDraft(createEmptySkillDraft());
-      setShowSkillCreate(false);
+      setSelectedSkillIds((prev) => prev.includes(response.skill.id) ? prev : [...prev, response.skill.id]);
     } catch (error) {
       setSkillCreateError(error instanceof Error ? error.message : String(error));
     } finally {
@@ -800,6 +759,7 @@ export function ChatPage({ activeBookId, mode = activeBookId ? "book" : "book-cr
         actionSource: "button",
         requestedIntent: details.action,
         actionPayload: details.actionPayload,
+        requestedSkills: details.requestedSkills,
       });
       return;
     }
@@ -811,6 +771,7 @@ export function ChatPage({ activeBookId, mode = activeBookId ? "book" : "book-cr
       actionSource: "button",
       requestedIntent: details.action,
       actionPayload: details.actionPayload,
+      requestedSkills: details.requestedSkills,
     });
   };
 
@@ -1128,20 +1089,14 @@ export function ChatPage({ activeBookId, mode = activeBookId ? "book" : "book-cr
                 <SkillPickerPanel
                   isZh={isZh}
                   skills={availableSkills}
+                  diagnostics={skillsData?.diagnostics}
                   selectedSkillIds={selectedSkillIds}
                   loading={skillsLoading}
                   error={skillsError}
-                  draft={skillDraft}
                   saving={skillSaving}
                   createError={skillCreateError}
-                  showCreate={showSkillCreate}
                   onToggleSkill={(skillId) => setSelectedSkillIds((prev) => toggleSelectedSkillIds(prev, skillId))}
-                  onDraftChange={setSkillDraft}
-                  onCreate={() => void createProjectSkill()}
-                  onShowCreate={(show) => {
-                    setShowSkillCreate(show);
-                    setSkillCreateError(null);
-                  }}
+                  onImport={(files) => void importProjectSkill(files)}
                 />
               ) : null}
               <input
