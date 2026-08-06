@@ -13,7 +13,7 @@ const strings = {
   "nav.createScript": { zh: "剧本创作", en: "Script" },
   "nav.createStoryboard": { zh: "分镜创作", en: "Storyboard" },
   "nav.createInteractiveFilm": { zh: "互动影游", en: "Interactive Film" },
-  "nav.createPlay": { zh: "InkOS 互动", en: "InkOS Play" },
+  "nav.createPlay": { zh: "互动创作", en: "Interactive Play" },
   "nav.createBranching": { zh: "分支互动", en: "Branching Play" },
   "nav.createFree": { zh: "开放世界", en: "Open World" },
   "nav.createFanfic": { zh: "同人创作", en: "Fanfic" },
@@ -338,7 +338,7 @@ const strings = {
   "truth.selectHint": { zh: "选择文件查看内容", en: "Select a file to view" },
 
   // Dashboard
-  "dash.subtitle": { zh: "管理你的文学宇宙和 AI 辅助草稿。", en: "Manage your literary universe and AI-assisted drafts." },
+  "dash.subtitle": { zh: "在星际创作工作台中管理你的文学宇宙和 AI 辅助草稿。", en: "Manage your literary universe and AI-assisted drafts in Stargate Creative Workspace." },
 
   // Chapter Reader extras
   "reader.openingManuscript": { zh: "打开书稿中...", en: "Opening manuscript..." },

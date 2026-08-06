@@ -25,15 +25,14 @@ const FlowView = lazy(() => import("./pages/FlowView"));
 const FilmWizard = lazy(() => import("./pages/FilmWizard"));
 import { LanguageSelector } from "./pages/LanguageSelector";
 import { BookSidebar, BookSidebarToggle } from "./components/chat/BookSidebar";
-import { usePortalLaunch } from "./features/portal";
+import { PORTAL_BRAND, usePortalLaunch } from "./features/portal";
 import { useSSE } from "./hooks/use-sse";
 import { useSessionEvents } from "./hooks/use-session-events";
 import { useTheme } from "./hooks/use-theme";
 import { useI18n } from "./hooks/use-i18n";
 import { setAppLanguage, tr } from "./lib/app-language";
 import { postApi, putApi, useApi } from "./hooks/use-api";
-import { Sun, Moon } from "lucide-react";
-import { House } from "lucide-react";
+import { CircleHelp, ExternalLink, House, Moon, Sun } from "lucide-react";
 
 export type { HashRoute as Route } from "./hooks/use-hash-route";
 
@@ -185,18 +184,26 @@ export function App() {
         {/* Header Strip */}
         <header className="h-14 shrink-0 flex items-center justify-between px-8 border-b border-border/40">
           <div className="flex items-center gap-2">
-             <button
-               onClick={nav.toDashboard}
+             <a
+               href={PORTAL_BRAND.portalUrl}
                className="inline-flex items-center gap-2 rounded-lg border border-border/50 bg-card/70 px-3.5 py-2 text-[17px] font-semibold text-foreground hover:bg-secondary/50 transition-colors"
              >
                <House size={18} />
-               <span>{t("bread.home")}</span>
+               <span>{PORTAL_BRAND.productName}</span>
                <span className="text-muted-foreground/70">/</span>
-               <span className="font-serif">InkOS Studio</span>
-             </button>
+               <span className="font-serif">{PORTAL_BRAND.workspaceName}</span>
+               <ExternalLink size={14} className="text-muted-foreground" aria-hidden="true" />
+             </a>
           </div>
 
           <div className="flex items-center gap-3">
+            <a
+              href={PORTAL_BRAND.helpUrl}
+              className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[14px] font-medium text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors"
+            >
+              <CircleHelp size={17} />
+              <span>{tr("帮助中心", "Help")}</span>
+            </a>
             <div className="flex gap-0.5 bg-muted/50 rounded-lg p-0.5">
               <button
                 onClick={async () => {

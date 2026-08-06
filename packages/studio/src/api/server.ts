@@ -1310,7 +1310,7 @@ function formatAgentFailure(
   if (kind === "internal") {
     return {
       code: "AGENT_INTERNAL_ERROR",
-      message: pick(lang, `InkOS 内部流程错误：${message}`, `InkOS internal pipeline error: ${message}`),
+      message: pick(lang, `创作引擎内部流程错误：${message}`, `Creative engine pipeline error: ${message}`),
       status: 500,
     };
   }
@@ -6839,6 +6839,20 @@ export async function startStudioServer(
         };
         return new Response(content, {
           headers: { "Content-Type": contentTypes[ext] ?? "application/octet-stream" },
+        });
+      } catch {
+        return c.notFound();
+      }
+    });
+
+    app.get("/favicon.svg", async (c) => {
+      try {
+        const content = await readFileFs(joinPath(options.staticDir!, "favicon.svg"));
+        return new Response(content, {
+          headers: {
+            "Content-Type": "image/svg+xml; charset=utf-8",
+            "Cache-Control": "public, max-age=3600",
+          },
         });
       } catch {
         return c.notFound();

@@ -5605,7 +5605,7 @@ describe("createStudioServer daemon lifecycle", () => {
     expect(response.status).toBe(500);
     const json = await response.json() as { error: { code: string; message: string }; response: string };
     expect(json.error.code).toBe("AGENT_INTERNAL_ERROR");
-    expect(json.error.message).toContain("InkOS 内部流程错误");
+    expect(json.error.message).toContain("创作引擎内部流程错误");
     expect(json.error.message).toContain("missing YAML frontmatter delimiters");
     expect(json.error.message).not.toMatch(/kkaiapi/i);
     expect(json.response).toBe(json.error.message);

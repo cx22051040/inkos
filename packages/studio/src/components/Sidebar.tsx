@@ -49,7 +49,7 @@ import {
   Film,
   Languages,
 } from "lucide-react";
-import { InkosLogo } from "./InkosLogo";
+import { PORTAL_BRAND, PortalBrandLogo } from "../features/portal";
 
 // 历史记录里的会话混装多种类型（chat / short / play / book-create），用图标区分。
 function SessionKindIcon({ kind, className }: { readonly kind?: string; readonly className?: string }) {
@@ -285,23 +285,25 @@ export function Sidebar({ nav, activePage, sse, t }: {
 
   return (
     <aside className="w-[260px] shrink-0 border-r border-border bg-background/80 backdrop-blur-md flex flex-col h-full overflow-hidden select-none">
-      {/* Logo Area */}
+      {/* Portal brand */}
       <div className="px-6 py-8">
         <button
+          type="button"
           onClick={nav.toDashboard}
+          aria-label="返回星际创作首页"
           className="group flex items-center gap-3 hover:opacity-80 transition-all duration-300"
         >
-          <InkosLogo className="w-11 h-11 shrink-0 group-hover:scale-105 transition-transform" />
+          <PortalBrandLogo className="w-11 h-11 shrink-0 group-hover:scale-105 transition-transform" />
           <div className="flex flex-col">
-            <span className="font-serif text-[27px] leading-none italic font-medium">InkOS</span>
-            <span className="text-[13px] uppercase tracking-[0.22em] text-muted-foreground font-bold mt-1.5">Studio</span>
+            <span className="font-serif text-[23px] leading-none font-semibold">{PORTAL_BRAND.productName}</span>
+            <span className="text-[11px] tracking-[0.16em] text-muted-foreground font-bold mt-1.5">星际创作工作台</span>
           </div>
         </button>
       </div>
 
       {/* Main Navigation */}
       <div className="flex-1 overflow-y-auto px-4 py-2 space-y-6">
-        {/* InkOS Create Section — always visible, two columns. */}
+        {/* Creation section — always visible, two columns. */}
         <div>
           <div className="px-3 mb-2.5">
             <span className="text-[16px] leading-6 uppercase tracking-[0.1em] text-muted-foreground font-bold">

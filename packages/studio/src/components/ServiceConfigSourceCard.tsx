@@ -110,8 +110,8 @@ export function ServiceConfigSourceCard({ onChange }: { onChange?: () => void })
         <div>
           <div className="text-sm font-medium">{tr("LLM 配置来源", "LLM config source")}</div>
           <div className="text-xs text-muted-foreground/70 mt-1">
-            {tr("Studio 运行时：", "Studio runtime:")}
-            <span className="text-foreground"> {tr("使用服务页配置和 Studio 密钥", "uses service page config and Studio keys")}</span>
+            {tr("创作工作台运行时：", "Workspace runtime:")}
+            <span className="text-foreground"> {tr("使用服务页配置和工作台密钥", "uses service page config and workspace keys")}</span>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -121,7 +121,7 @@ export function ServiceConfigSourceCard({ onChange }: { onChange?: () => void })
             disabled={saving !== null || importing || configSource === "studio"}
             className="rounded-lg border border-border/50 px-3 py-1.5 text-xs hover:bg-secondary/50 disabled:opacity-50"
           >
-            {saving === "studio" ? tr("切换中…", "Switching…") : tr("使用 Studio 配置", "Use Studio config")}
+            {saving === "studio" ? tr("切换中…", "Switching…") : tr("使用工作台配置", "Use workspace config")}
           </button>
           {envDetected && activeEnvSummary.hasApiKey ? (
             <button
@@ -139,8 +139,8 @@ export function ServiceConfigSourceCard({ onChange }: { onChange?: () => void })
       {storedConfigSource === "env" ? (
         <div className="rounded-lg border border-amber-500/25 bg-amber-500/[0.04] p-3 text-xs text-muted-foreground/80">
           {tr(
-            "检测到旧配置标记为 `.env` 优先。Studio 运行时不会使用它；CLI、daemon 和部署环境仍可按 env 覆盖层使用。",
-            "A legacy setting marks `.env` as preferred. The Studio runtime ignores it; CLI, daemon, and deployment environments may still use the env override layer.",
+            "检测到旧配置标记为 `.env` 优先。创作工作台运行时不会使用它；CLI、daemon 和部署环境仍可按 env 覆盖层使用。",
+            "A legacy setting marks `.env` as preferred. The workspace runtime ignores it; CLI, daemon, and deployment environments may still use the env override layer.",
           )}
         </div>
       ) : null}
@@ -157,16 +157,16 @@ export function ServiceConfigSourceCard({ onChange }: { onChange?: () => void })
           <div>API Key: <span className="text-foreground">{activeEnvSummary.hasApiKey ? tr("已设置", "set") : tr("未设置", "not set")}</span></div>
           <div className="text-muted-foreground/70 pt-1">
             {tr(
-              "当前虽然检测到 .env，但 Studio 和 Agent 请求不会直接使用这套覆盖；点击“导入检测到的配置”后，会把它保存为 Studio 服务配置。",
-              "A .env override was detected, but Studio and agent requests do not use it directly. Click “Import detected config” to save it as Studio service config.",
+              "当前虽然检测到 .env，但创作工作台和 Agent 请求不会直接使用这套覆盖；点击“导入检测到的配置”后，会把它保存为工作台服务配置。",
+              "A .env override was detected, but workspace and agent requests do not use it directly. Click “Import detected config” to save it as workspace service config.",
             )}
           </div>
         </div>
       ) : (
         <div className="rounded-lg border border-border/30 bg-secondary/20 p-3 text-xs text-muted-foreground/75">
           {tr(
-            "未检测到目录或全局 `.env` 里的 LLM 覆盖变量。当前会直接使用项目配置和 Studio 服务配置。",
-            "No LLM override variables detected in the project or global `.env`. Project config and Studio service config are used directly.",
+            "未检测到目录或全局 `.env` 里的 LLM 覆盖变量。当前会直接使用项目配置和工作台服务配置。",
+            "No LLM override variables detected in the project or global `.env`. Project config and workspace service config are used directly.",
           )}
         </div>
       )}

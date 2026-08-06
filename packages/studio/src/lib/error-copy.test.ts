@@ -22,7 +22,7 @@ describe("localizeKnownRuntimeMessage", () => {
     const studioMessage = localizeKnownRuntimeMessage(
       "Studio LLM API key not set. Open Studio services and save an API key for the selected service.",
     );
-    expect(studioMessage).toContain("Studio 模型 API Key 未设置");
+    expect(studioMessage).toContain("创作工作台的模型 API Key 未设置");
     expect(studioMessage).not.toMatch(/kkaiapi/i);
 
     const cliMessage = localizeKnownRuntimeMessage(
